@@ -25,6 +25,8 @@ let indexError = null;
 const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'public')));
+// 提供 marked.js（本地 npm 包，避免 CDN 被墙）
+app.use('/lib', express.static(path.join(__dirname, '..', 'node_modules', 'marked', 'lib')));
 
 // API: 健康检查
 app.get('/api/health', (_req, res) => {
