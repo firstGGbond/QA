@@ -1,3 +1,6 @@
 node_modules/
 .idea/
 *.log
+
+# Embedding 缓存（自动生成，无需提交）
+data/.embedding_cache.json
