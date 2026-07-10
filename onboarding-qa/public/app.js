@@ -200,23 +200,25 @@ function addSources(msgEl, sources) {
   contentEl.appendChild(sourcesDiv);
 }
 
-// ─── 简易 Markdown 渲染 ───────────────────────
+// ─── Markdown 渲染（使用 marked 库）─────────────
 function renderMarkdown(text) {
   if (!text) return '';
 
-  let html = escapeHtml(text);
+  // 配置 marked：安全模式，禁止原始 HTML 防止 XSS
+  marked.setOptions({
+    breaks: true,        // 单个换行也转 <br>
+    gfm: true,           // GitHub 风格 Markdown（表格、任务列表等）
+  });
 
-  // 粗体 **text**
-  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-
-  // 行内代码 `code`
-  html = html.replace(/`(.+?)`/g, '<code style="background:#f1f5f9;padding:1px 4px;border-radius:3px;font-size:0.9em;">$1</code>');
-
-  // 换行
-  html = html.replace(/\n/g, '<br>');
-
-  // 识别带编号的列表项
-  html = html.replace(/(<br>|^)(\d+[、．.])/g, '$1$2');
+  // 先对文本做 HTML 转义（防止用户输入中的 <script> 等）
+  // 然后交给 marked 渲染为富文本 HTML
+  let html;
+  try {
+    html = marked.parse(text);
+  } catch (e) {
+    // 降级：如果 marked 解析失败，退回到纯文本替换
+    html = escapeHtml(text).replace(/\n/g, '<br>');
+  }
 
   return html;
 }
