@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# IDE
+.idea/
+
+# Environment (contains API keys!)
+.env
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude Code
+.claude/
+
+# Temp files
+*.tmp

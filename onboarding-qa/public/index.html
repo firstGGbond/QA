@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>浩鲸科技 · 新人入职问答</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="app">
+    <!-- 侧边栏 -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h1>🐋 浩鲸科技</h1>
+        <p class="subtitle">新人入职问答助手</p>
+      </div>
+
+      <div class="quick-questions">
+        <h3>💡 常见问题</h3>
+        <button class="q-btn" data-q="试用期工资怎么算？">试用期工资怎么算？</button>
+        <button class="q-btn" data-q="每月什么时候发工资？">每月什么时候发工资？</button>
+        <button class="q-btn" data-q="年假有多少天？怎么申请？">年假有多少天？怎么申请？</button>
+        <button class="q-btn" data-q="加班费怎么算？">加班费怎么算？</button>
+        <button class="q-btn" data-q="五险一金什么时候开始交？">五险一金什么时候开始交？</button>
+        <button class="q-btn" data-q="病假工资怎么扣？">病假工资怎么扣？</button>
+      </div>
+
+      <div class="sidebar-footer">
+        <p class="kb-info">📚 知识库：8份制度文档</p>
+        <p class="model-info">🧠 模型：DeepSeek V4 Pro</p>
+      </div>
+    </aside>
+
+    <!-- 主聊天区 -->
+    <main class="chat-area">
+      <div class="chat-header">
+        <div class="chat-header-top">
+          <div>
+            <h2>📋 入职问答</h2>
+            <p>基于公司制度文档检索回答，每一条回答都有据可查</p>
+            <div id="status" class="status-ok">✅ 服务就绪</div>
+          </div>
+          <button id="newChatBtn" class="new-chat-btn" title="开启新会话">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+              <line x1="12" y1="8" x2="12" y2="14"/>
+              <line x1="9" y1="11" x2="15" y2="11"/>
+            </svg>
+            新会话
+          </button>
+        </div>
+      </div>
+
+      <div id="messages" class="messages">
+        <div class="msg system-msg">
+          <div class="msg-content">
+            <p>👋 你好！我是浩鲸科技新人入职助手。</p>
+            <p>我可以回答关于 <strong>薪酬制度、假勤规定、员工福利、入职流程</strong> 等问题。</p>
+            <p>所有回答均来自公司正式制度文档，并会标注来源。</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="chat-footer">
+        <div class="input-row">
+          <textarea
+            id="questionInput"
+            placeholder="输入你的问题，例如：试用期工资怎么算？"
+            rows="1"
+          ></textarea>
+          <button id="sendBtn" class="send-btn" title="发送">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M2 10l16-8-8 16-2-5.5L2 10z"/>
+            </svg>
+          </button>
+        </div>
+        <p class="input-hint">按 Enter 发送，Shift+Enter 换行</p>
+      </div>
+    </main>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
