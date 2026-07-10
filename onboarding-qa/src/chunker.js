@@ -1,6 +1,6 @@
 /**
- * 文档分块 & 索引模块
- * 将知识库 txt 文件按中文段落结构切分为可检索的块
+ * 文档分块 & 向量嵌入模块
+ * 将知识库 txt 文件按中文段落结构切分，并调用 Embedding API 生成向量
  */
 
 const fs = require('fs');
@@ -128,9 +128,65 @@ function splitLargeChunks(chunks, maxLen = 1500) {
 }
 
 /**
- * 构建全量索引
+ * 调用 Embedding API 为每个 chunk 生成向量
+ * 使用 OpenAI 兼容接口，支持批量请求
  */
-function buildIndex() {
+async function computeEmbeddings(chunks, batchSize = 20) {
+  const apiKey = process.env.LLM_API_KEY;
+  const baseUrl = (process.env.LLM_BASE_URL || 'https://lab.iwhalecloud.com/gpt-proxy/v1').replace(/\/+$/, '');
+  const model = process.env.LLM_EMBEDDING_MODEL || 'text-embedding-3-small';
+
+  if (!apiKey) {
+    throw new Error('未配置 LLM_API_KEY，向量嵌入功能不可用');
+  }
+
+  // 将 title + content 拼接作为嵌入文本，提升语义匹配效果
+  const texts = chunks.map(c => `${c.title}\n${c.content}`);
+
+  console.log(`[embedding] 模型: ${model}, 共 ${texts.length} 个文本, 每批 ${batchSize} 个`);
+
+  const embeddings = new Array(texts.length);
+  const totalBatches = Math.ceil(texts.length / batchSize);
+
+  for (let i = 0; i < texts.length; i += batchSize) {
+    const batch = texts.slice(i, i + batchSize);
+    const batchNum = Math.floor(i / batchSize) + 1;
+
+    const res = await fetch(`${baseUrl}/embeddings`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({ model, input: batch }),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`Embedding API 错误 (${res.status}): ${errText}`);
+    }
+
+    const data = await res.json();
+
+    // 按 index 排序后填入对应位置
+    const sorted = [...data.data].sort((a, b) => a.index - b.index);
+    for (let j = 0; j < sorted.length; j++) {
+      embeddings[i + j] = sorted[j].embedding;
+    }
+
+    console.log(`[embedding] 批次 ${batchNum}/${totalBatches}: ${i + batch.length}/${texts.length} 完成`);
+  }
+
+  const dim = embeddings[0]?.length || 0;
+  console.log(`[embedding] 全部完成: ${embeddings.length} 个向量, 维度 ${dim}`);
+  return embeddings;
+}
+
+/**
+ * 构建全量索引（异步：需要调用 Embedding API）
+ * 返回 { chunks, embeddings }，其中 embeddings[i] 对应 chunks[i]
+ */
+async function buildIndex() {
   const files = fs.readdirSync(DATA_DIR).filter(f => f.endsWith('.txt'));
   console.log(`[chunker] 发现 ${files.length} 个知识库文件`);
 
@@ -145,61 +201,10 @@ function buildIndex() {
   allChunks = splitLargeChunks(allChunks);
   console.log(`[chunker] 总计 ${allChunks.length} 个检索块`);
 
-  // 构建倒排索引
-  const invertedIndex = buildInvertedIndex(allChunks);
+  // 调用 Embedding API 生成向量
+  const embeddings = await computeEmbeddings(allChunks);
 
-  return { chunks: allChunks, invertedIndex };
+  return { chunks: allChunks, embeddings };
 }
 
-/**
- * 构建简易倒排索引（用于关键词快速召回）
- */
-function buildInvertedIndex(chunks) {
-  const index = new Map(); // word -> Set<chunkId>
-
-  // 常用中文停用词
-  const stopWords = new Set([
-    '的', '了', '在', '是', '我', '有', '和', '就', '不', '人', '都', '一',
-    '一个', '上', '也', '很', '到', '说', '要', '去', '你', '会', '着',
-    '没', '看', '好', '自己', '这', '他', '她', '它', '们', '那', '与',
-    '为', '及', '或', '等', '每', '被', '从', '而', '以', '之', '所',
-    '能', '对', '将', '已', '其', '更', '并', '个', '中', '但', '该',
-    '可', '向', '把', '让', '于', '各', '年', '月', '日', '元', '第',
-  ]);
-
-  for (const chunk of chunks) {
-    const words = tokenize(chunk.content + ' ' + chunk.title);
-    const wordSet = new Set(words.filter(w => !stopWords.has(w) && w.length >= 2));
-    for (const w of wordSet) {
-      if (!index.has(w)) index.set(w, new Set());
-      index.get(w).add(chunk.id);
-    }
-  }
-
-  return index;
-}
-
-/**
- * 简易中文分词（bigram + 关键词提取）
- */
-function tokenize(text) {
-  // 移除标点，保留中英文数字
-  const cleaned = text.replace(/[^一-鿿\w]/g, ' ');
-  // 中文 bigram
-  const result = [];
-  const chars = [...cleaned];
-  for (let i = 0; i < chars.length - 1; i++) {
-    const bigram = chars[i] + chars[i + 1];
-    if (/^[一-鿿]{2}$/.test(bigram)) {
-      result.push(bigram);
-    }
-  }
-  // 英文/数字词
-  const words = cleaned.split(/\s+/);
-  for (const w of words) {
-    if (w.length >= 2) result.push(w.toLowerCase());
-  }
-  return result;
-}
-
-module.exports = { buildIndex, tokenize };
+module.exports = { buildIndex };
